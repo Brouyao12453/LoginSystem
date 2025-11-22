@@ -1,0 +1,117 @@
+{% extends 'users/base.html' %}
+{% block content %}
+<div class="container mt-4">
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <h2 class="card-title mb-4">Hello, {{ user }}</h2>
+
+      {% if today_log %}
+        <ul class="list-group mb-3">
+          <li class="list-group-item d-flex justify-content-between">
+            <strong>Clock In:</strong> <span>{{ today_log.clock_in }}</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between">
+            <strong>Break Start:</strong> <span>{{ today_log.break_start }}</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between">
+            <strong>Break End:</strong> <span>{{ today_log.break_end }}</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between">
+            <strong>Clock Out:</strong> <span>{{ today_log.clock_out }}</span>
+          </li>
+        </ul>
+      {% else %}
+        <div class="alert alert-info" role="alert">
+          No shift logged today.
+        </div>
+      {% endif %}
+
+      <hr>
+
+      <div class="d-grid gap-2">
+        <a href="{% url 'attendance:clock_in' %}" id="clock-in-btn" class="btn btn-success">🕒 Clock In</a>
+        <a href="{% url 'attendance:start_break' %}" id="start-break-btn" class="btn btn-warning">🍽️ Start Break</a>
+        <a href="{% url 'attendance:end_break' %}" id="end-break-btn" class="btn btn-info">⏳ End Break</a>
+        <a href="{% url 'attendance:clock_out' %}" id="clock-out-btn" class="btn btn-danger">🔚 Clock Out</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Get button elements
+  const clockInBtn = document.getElementById('clock-in-btn');
+  const startBreakBtn = document.getElementById('start-break-btn');
+  const endBreakBtn = document.getElementById('end-break-btn');
+  const clockOutBtn = document.getElementById('clock-out-btn');
+
+  // Disable function with visual feedback
+  function disableButton(btn) {
+    btn.classList.add('disabled');
+    btn.style.opacity = '0.65';
+    btn.style.pointerEvents = 'none';
+    btn.setAttribute('aria-disabled', 'true');
+  }
+
+  // Enable function
+  function enableButton(btn) {
+    btn.classList.remove('disabled');
+    btn.style.opacity = '1';
+    btn.style.pointerEvents = 'auto';
+    btn.removeAttribute('aria-disabled');
+  }
+
+  // Check shift status and disable appropriate buttons
+  {% if today_log %}
+    // Disable clock-in if already clocked in
+    disableButton(clockInBtn);
+
+    // Handle break buttons
+    {% if today_log.break_start %}
+      disableButton(startBreakBtn);
+      enableButton(endBreakBtn);
+
+      {% if today_log.break_end %}
+        disableButton(endBreakBtn);
+        enableButton(startBreakBtn);
+      {% endif %}
+    {% else %}
+      disableButton(endBreakBtn);
+      enableButton(startBreakBtn);
+    {% endif %}
+
+    // Handle clock out
+    {% if today_log.clock_out %}
+      disableButton(clockOutBtn);
+      disableButton(startBreakBtn);
+      disableButton(endBreakBtn);
+    {% else %}
+      enableButton(clockOutBtn);
+    {% endif %}
+  {% else %}
+    // No shift today - only enable clock in
+    disableButton(startBreakBtn);
+    disableButton(endBreakBtn);
+    disableButton(clockOutBtn);
+    enableButton(clockInBtn);
+  {% endif %}
+
+  // Add click handlers to prevent accidental submissions
+  [clockInBtn, startBreakBtn, endBreakBtn, clockOutBtn].forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      if (this.classList.contains('disabled')) {
+        e.preventDefault();
+        alert('This action is not available in your current shift status.');
+      }
+    });
+  });
+});
+</script>
+
+<style>
+.disabled {
+  cursor: not-allowed;
+}
+</style>
+{% endblock %}

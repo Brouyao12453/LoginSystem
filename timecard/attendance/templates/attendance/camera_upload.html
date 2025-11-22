@@ -1,0 +1,127 @@
+{% extends 'users/base.html' %}
+{% block content %}
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header bg-primary text-white">
+          <h4>Face Verification</h4>
+        </div>
+        <div class="card-body text-center">
+          <div id="camera-container" class="mb-3">
+            <video id="video" width="400" height="300" autoplay playsinline></video>
+            <canvas id="canvas" width="400" height="300" style="display:none;"></canvas>
+          </div>
+          <div id="camera-error" class="alert alert-danger d-none"></div>
+
+          <form id="photo-form" method="post" action="{% url 'attendance:clock_in' %}">
+            {% csrf_token %}
+            <input type="hidden" id="photo-data" name="photo">
+            <button id="capture-btn" class="btn btn-primary mb-3" type="button">
+              <i class="fas fa-camera me-2"></i>Capture & Verify
+            </button>
+          </form>
+
+          <div id="result-message" class="alert d-none"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const video = document.getElementById('video');
+  const canvas = document.getElementById('canvas');
+  const captureBtn = document.getElementById('capture-btn');
+  const photoForm = document.getElementById('photo-form');
+  const photoData = document.getElementById('photo-data');
+  const resultMessage = document.getElementById('result-message');
+  const cameraError = document.getElementById('camera-error');
+  let stream = null;
+
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showError("Camera API not supported in this browser");
+    return;
+  }
+
+  navigator.mediaDevices.getUserMedia({
+    video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
+    audio: false
+  })
+  .then(function(s) {
+    stream = s;
+    video.srcObject = stream;
+    captureBtn.disabled = false;
+  })
+  .catch(function(err) {
+    showError("Could not access camera: " + err.message);
+    console.error("Camera error:", err);
+  });
+
+  captureBtn.addEventListener('click', function() {
+    if (!stream) {
+      showError("Camera not ready");
+      return;
+    }
+
+    const context = canvas.getContext('2d');
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const imageData = canvas.toDataURL('image/jpeg', 0.8);
+    photoData.value = imageData;
+
+    showMessage("Verifying face...", "info");
+
+    fetch(photoForm.action, {
+      method: 'POST',
+      body: new FormData(photoForm),
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+      }
+    })
+    .then(response => {
+      const contentType = response.headers.get('content-type');
+      if (!response.ok || !contentType.includes("application/json")) {
+        return response.text().then(text => {
+          throw new Error("Unexpected response: " + text.substring(0, 100));
+        });
+      }
+      return response.json();
+    })
+    .then(data => {
+      if (data.success) {
+        showMessage(data.message, "success");
+        setTimeout(() => {
+          window.location.href = data.redirect_url;
+        }, 1500);
+      } else {
+        showMessage(data.message || "Face not recognized", "danger");
+      }
+    })
+    .catch(error => {
+      console.error("Error:", error);
+      showMessage("Error: " + error.message, "danger");
+    });
+  });
+
+  function showError(message) {
+    cameraError.textContent = message;
+    cameraError.classList.remove('d-none');
+    captureBtn.disabled = true;
+  }
+
+  function showMessage(message, type) {
+    resultMessage.textContent = message;
+    resultMessage.className = `alert alert-${type}`;
+    resultMessage.classList.remove('d-none');
+  }
+
+  window.addEventListener('beforeunload', function() {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+    }
+  });
+});
+</script>
+{% endblock %}

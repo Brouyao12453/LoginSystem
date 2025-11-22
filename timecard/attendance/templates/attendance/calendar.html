@@ -1,0 +1,99 @@
+{% extends "users/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="min-h-screen flex flex-col items-center justify-center bg-gray-50 py-8">
+    <div class="w-full max-w-5xl bg-white rounded-xl shadow-lg p-8">
+        <h1 class="text-3xl font-bold text-center mb-8">🗓️ My Schedule</h1>
+<div style="display: flex; justify-content: center;">
+        <div class="mb-6 flex justify-between items-center">
+            <div>
+                <a href="{% url 'attendance:timecard' %}" class="btn btn-alert bg-alert">View Time Card</a>
+            </div>
+            <div class="flex items-center space-x-4">
+                <a href="{% url 'attendance:calendar' year=prev_month.year month=prev_month.month %}" class="btn btn-gray">&larr; Previous</a>
+                <span class="text-xl font-semibold">{{ month_start_date|date:"F Y" }}</span>
+                <a href="{% url 'attendance:calendar' year=next_month.year month=next_month.month %}" class="btn btn-gray">Next &rarr;</a>
+            </div>
+        </div>
+</div>
+        <div style="display: flex; justify-content: center;">
+            <table class="w-full text-center border-collapse border border-gray-200">
+                <thead>
+                    <tr class="bg-gray-100">
+                        <th class="p-3">Lun</th>
+                        <th class="p-3">Mar</th>
+                        <th class="p-3">Mer</th>
+                        <th class="p-3">Jeu</th>
+                        <th class="p-3">Ven</th>
+                        <th class="p-3 text-red-600">Sam</th>
+                        <th class="p-3 text-red-600">Dim</th>
+                    </tr>
+                </thead>
+                <tbody class="text-center">
+                    {% for week in weeks %}
+                    <tr >
+                        {% for day in week %}
+                        <td class="  w- h- align-middle border border-gray-200 cursor-pointer transition-all duration-200 ease-in-out
+                            {% if not day.in_current_month %}text-gray-400 opacity-50{% endif %}
+                            {% if day.is_today %}today{% endif %}
+                            {% if day.is_weekend %}weekend{% endif %}
+
+                            {% if day.is_leave %}leave{% endif %}
+                            {% if day.is_scheduled %}scheduled{% endif %}
+                            {% if day.is_day_off %}day-off{% endif %}
+                            {% if day.missed_punch %}missed-punch{% endif %}
+                            {% if day.is_late %}late{% endif %}
+                            hover:scale-110"
+                            title="
+                                {% if day.is_scheduled %}Working day{% endif %}
+                                {% if day.is_payday %} Payday{% endif %}
+                                {% if day.is_leave %} Leave{% endif %}
+                                {% if day.is_day_off %} Day off{% endif %}
+                                {% if day.is_late %} Late{% endif %}
+                                {% if day.missed_punch %} Missed punch{% endif %}
+                            ">
+                            <div class="text-lg font-medium">{{ day.date.day }}</div>
+                             {% if day.is_payday %}
+                        <div class="dark-dot "></div>
+                        {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6 mt-10">
+            <h2 class="text-xl font-semibold mb-4 text-center">Legend</h2>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm text-center">
+                <div class="flex items-center scheduled"><span class="inline-block w-5 h-5 rounded bg-blue-400 mr-2"></span>Scheduled working day</div>
+                <div class="flex items-center"><span class="inline-block w-5 h-5 rounded bg-green-500 mr-2"></span>On Leave</div>
+                <div class="flex items-center"><span class="inline-block w-5 h-5 rounded border-2 border-black mr-2 dark-dot" ></span>Payday</div>
+                <div class="flex items-center"><span class="inline-block w-5 h-5 rounded bg-white border border-gray-400 mr-2"></span>Approved day off</div>
+                <div class="flex items-center"><span class="inline-block w-5 h-5 rounded bg-red-500 mr-2"></span>Late / Missed punch</div>
+                <div class="flex items-center today"><span class="inline-block w-5 h-5 rounded bg-yellow-300 mr-2"></span>Today</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .today { background-color: #fff3b0; font-weight: bold; }
+    .weekend { background-color: #f9fafb; }
+    .leave { background-color: #b0f0b0; }
+    .scheduled { background-color: #add8e6; }
+    .day-off { background-color: white; border: 1px solid #ccc; }
+    .missed-punch { background-color: #f56565; color: white; }
+    .late { background-color: #feb2b2; }
+
+    .dark-dot {
+  display: inline-block;
+  height: 10px; /* Adjust size as needed */
+  width: 10px;  /* Adjust size as needed */
+  background-color: #333; /* Dark gray color */
+  border-radius: 50%; /* Creates the circular shape */
+}
+</style>
+{% endblock %}

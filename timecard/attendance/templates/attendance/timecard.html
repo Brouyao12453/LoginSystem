@@ -1,0 +1,178 @@
+{% extends "users/base.html" %}
+{% load static %}
+{% load static time_filters %}
+
+{% block content %}
+<div class="container mx-auto px-5 py-8">
+    <h1 class="text-2xl font-bold mb-6">Time Card</h1>
+
+    <!-- Action Buttons -->
+<div class="flex flex-wrap items-center gap-6 mb-6">
+
+    <a href="{% url 'attendance:clock_out' %}"
+       class="inline-flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-medium px-4 py-2 rounded-lg shadow transition">
+        🕒 <span>Unpaid Time</span>
+    </a>
+
+    <a href="{% url 'attendance:clock_out' %}"
+       class="inline-flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white font-medium px-4 py-2 rounded-lg shadow transition">
+        🌴 <span>Time Off</span>
+    </a>
+
+    <a href="{% url 'attendance:clock_out' %}"
+       class="inline-flex items-center gap-2 bg-purple-500 hover:bg-purple-600 text-white font-medium px-4 py-2 rounded-lg shadow transition">
+        📝 <span>Leave</span>
+    </a>
+
+    <a href="{% url 'attendance:clock_out' %}"
+       class="inline-flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-white font-medium px-4 py-2 rounded-lg shadow transition">
+        ⏰ <span>Correct Punches</span>
+    </a>
+
+    <a href="{% url 'attendance:clock_out' %}"
+       class="inline-flex items-center gap-2 bg-indigo-500 hover:bg-indigo-600 text-white font-medium px-4 py-2 rounded-lg shadow transition">
+        📅 <span>Change Schedule</span>
+    </a>
+
+    <a href="{% url 'attendance:clock_out' %}"
+       class="inline-flex items-center gap-2 bg-pink-500 hover:bg-pink-600 text-white font-medium px-4 py-2 rounded-lg shadow transition">
+        📆 <span>Request Time Off</span>
+    </a>
+</div>
+
+    <!-- Date filter -->
+    <div class="mb-6 bg-white rounded-lg shadow p-4">
+        <form method="get" class="flex flex-col md:flex-row gap-4">
+            <div>
+                <label for="start_date" class="block text-sm font-medium text-gray-700">Start Date</label>
+                <input type="date" name="start_date" id="start_date"
+                       value="{{ start_date|date:'Y-m-d' }}"
+                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+            </div>
+            <div>
+                <label for="end_date" class="block text-sm font-medium text-gray-700">End Date</label>
+                <input type="date" name="end_date" id="end_date"
+                       value="{{ end_date|date:'Y-m-d' }}"
+                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+            </div>
+            <div class="flex items-end">
+                <button type="submit" class="btn btn-blue">Filter</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Totals -->
+    <div class="mb-6 bg-white rounded-lg shadow overflow-hidden">
+        <div class="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x">
+            <div class="p-4">
+                <h3 class="text-lg font-medium mb-2">Total Hours</h3>
+                <p class="text-2xl font-bold">
+                    {{ total_hours|hours }} h ({{ total_hours|hhmm }})
+                </p>
+            </div>
+            <div class="p-4">
+                <h3 class="text-lg font-medium mb-2">Overtime</h3>
+                <p class="text-2xl font-bold">
+                    {{ overtime_hours|hours }} h ({{ overtime_hours|hhmm }})
+                </p>
+            </div>
+            <div class="p-4">
+                <h3 class="text-lg font-medium mb-2">Leave Taken</h3>
+                <div class="space-y-1">
+                    {% for stat in leave_stats %}
+                    <div class="flex justify-between">
+                        <span>{{ stat.type }}:</span>
+                        <span>{{ stat.days }} day{{ stat.days|pluralize }}</span>
+                    </div>
+                    {% empty %}
+                    <p>No leave taken in this period</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logs -->
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Clock In</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Clock Out</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Break</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for log in shift_logs %}
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        {{ log.clock_in.date|date:"D, M j" }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        {% if log.clock_in %}
+                            {{ log.clock_in.time|time:"H:i" }}
+                            <span class="block text-xs {% if log.clock_in_photo %}text-green-500{% else %}text-red-500{% endif %}">
+                                {% if log.clock_in_photo %}✅ Verified{% else %}❌ No photo{% endif %}
+                            </span>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        {% if log.clock_out %}
+                            {{ log.clock_out.time|time:"H:i" }}
+                            <span class="block text-xs {% if log.clock_out_photo %}text-green-500{% else %}text-red-500{% endif %}">
+                                {% if log.clock_out_photo %}✅ Verified{% else %}❌ No photo{% endif %}
+                            </span>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        {% if log.break_start and log.break_end %}
+                            {{ log.break_start.time|time:"H:i" }} - {{ log.break_end.time|time:"H:i" }}
+                            ({{ log.break_end|timeuntil:log.break_start }})
+                        {% elif log.break_start %}
+                            Started at {{ log.break_start.time|time:"H:i" }} (not ended)
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        {% if log.worked_duration %}
+                            {{ log.worked_duration|hhmm }} ({{ log.worked_duration|hours }} h)
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        {% if not log.clock_out %}
+                            <span class="px-2 py-1 text-xs font-semibold rounded bg-yellow-100 text-yellow-800">
+                                ⚠️ Missed punch
+                            </span>
+                        {% elif log.clock_in_photo and log.clock_out_photo %}
+                            <span class="px-2 py-1 text-xs font-semibold rounded bg-green-100 text-green-800">
+                                ✅ Complete
+                            </span>
+                        {% else %}
+                            <span class="px-2 py-1 text-xs font-semibold rounded bg-red-100 text-red-800">
+                                ❌ Incomplete
+                            </span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="px-6 py-4 text-center text-gray-500">
+                        No attendance records found for this period
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

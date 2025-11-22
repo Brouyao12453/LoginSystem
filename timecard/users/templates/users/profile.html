@@ -1,0 +1,112 @@
+{% extends "users/base.html" %}
+
+{% block title %}My Profile{% endblock %}
+{% block content %}
+<div class="container my-5">
+    <div class="row">
+        <div class="col-lg-4">
+            <!-- Profile Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header gradient-bg text-white">
+                    <h5 class="mb-0">Profile Picture</h5>
+                </div>
+                <div class="card-body text-center">
+                    <img src="{{ employee.profile_image.url }}"
+                         alt="Profile Image"
+                         class="rounded-circle mb-3"
+                         width="150"
+                         height="150">
+
+                    <h4>{{ employee.user.get_full_name }}</h4>
+                    <p class="text-muted mb-1">{{ employee.position }}</p>
+                    <p class="text-muted">{{ employee.department }}</p>
+
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'users:profile-update' %}" class="btn btn-primary">
+                            <i class="fas fa-edit me-2"></i>Edit Profile
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <!-- Profile Details -->
+            <div class="card shadow-sm">
+                <div class="card-header gradient-bg text-white">
+                    <h5 class="mb-0">Personal Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p><strong>First Name:</strong> {{ employee.first_name }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Middle Name:</strong> {{ employee.middle_name|default:"-" }}</p>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p><strong>Last Name:</strong> {{ employee.last_name }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Gender:</strong> {{ employee.gender|default:"-" }}</p>
+                        </div>
+                    </div>
+                    <hr>
+
+                    <h5 class="mt-4">Work Information</h5>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p><strong>Employee ID:</strong> {{ employee.employee_id }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Hourly Rate:</strong> ${{ employee.hourly_rate }}</p>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p><strong>Position:</strong> {{ employee.position|default:"-" }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Department:</strong> {{ employee.department|default:"-" }}</p>
+                        </div>
+                    </div>
+                    <hr>
+
+                    <h5 class="mt-4">Contact Information</h5>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p><strong>Email:</strong> {{ employee.user.email }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Phone:</strong> {{ employee.phone_number|default:"-" }}</p>
+                        </div>
+                    </div>
+
+                    {% if employee.reference_photo %}
+                    <hr>
+                    <h5 class="mt-4">Reference Photo</h5>
+                    <img src="{{ employee.reference_photo.url }}"
+                         alt="Reference Photo"
+                         class="img-thumbnail"
+                         width="200">
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Fallback for profile image if the URL is broken
+document.addEventListener('DOMContentLoaded', function() {
+    const profileImg = document.querySelector('.rounded-circle');
+    profileImg.onerror = function() {
+        this.src = '/static/profile_photos/default.png';
+    };
+});
+</script>
+{% endblock %}

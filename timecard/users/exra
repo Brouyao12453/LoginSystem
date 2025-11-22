@@ -1,0 +1,140 @@
+{% extends 'users/base.html' %}
+{% block content %}
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-md-8 text-center">
+      <div class="card">
+        <div class="card-header bg-primary text-white">
+          <h4 class="mb-0">Face Verification</h4>
+        </div>
+        <div class="card-body">
+          <div class="position-relative mb-3" style="max-width: 720px; margin: 0 auto;">
+            <video id="video" width="100%" height="auto" autoplay muted playsinline class="border border-secondary rounded"></video>
+            <canvas id="overlay" class="position-absolute top-0 start-0 w-100 h-100"></canvas>
+            <canvas id="canvas" class="d-none"></canvas>
+          </div>
+
+          <div class="d-flex justify-content-center mb-3">
+            <div id="statusIndicator" class="badge bg-secondary">Initializing...</div>
+          </div>
+
+          <form id="photoForm" method="post" enctype="multipart/form-data" class="mb-3">
+            {% csrf_token %}
+            <input type="hidden" id="photoInput" name="photo">
+            <button type="submit" id="captureBtn" class="btn btn-success" disabled>
+              <i class="fas fa-camera me-2"></i>Capture Photo
+            </button>
+          </form>
+
+          <div id="error" class="alert alert-danger d-none"></div>
+
+          <div id="loadingSpinner" class="d-none">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Processing...</span>
+            </div>
+            <p class="mt-2">Verifying your face...</p>
+            <div id="cameraHelp" class="alert alert-info mt-3 d-none"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FontAwesome -->
+<script src="https://kit.fontawesome.com/your-code.js" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
+<script>
+  const video = document.getElementById('video');
+  const overlay = document.getElementById('overlay');
+  const overlayCtx = overlay.getContext('2d');
+  const canvas = document.getElementById('canvas');
+  const captureBtn = document.getElementById('captureBtn');
+  const photoForm = document.getElementById('photoForm');
+  const photoInput = document.getElementById('photoInput');
+  const errorDiv = document.getElementById('error');
+  const statusIndicator = document.getElementById('statusIndicator');
+  const loadingSpinner = document.getElementById('loadingSpinner');
+  let stream;
+navigator.mediaDevices.enumerateDevices()
+  .then(devices => console.log("Devices:", devices))
+  .catch(err => console.error("Device enumeration failed", err));
+
+  function updateStatus(text, type = 'secondary') {
+    statusIndicator.textContent = text;
+    statusIndicator.className = `badge bg-${type}`;
+  }
+
+async function startVideo() {
+  navigator.mediaDevices.enumerateDevices()
+  .then(devices => console.log("Devices:", devices))
+  .catch(err => console.error("Device enumeration failed", err));
+
+  try {
+    updateStatus('Requesting camera access...');
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user' }
+    });
+    video.srcObject = stream;
+    video.play(); // Ensure it starts
+    updateStatus('Camera active', 'success');
+    return true;
+  } catch (err) {
+    console.error("Camera error:", err);
+    showError("Camera access error: " + err.message);
+    return false;
+  }
+}
+
+  async function loadModels() {
+    await faceapi.nets.tinyFaceDetector.loadFromUri('/static/face_models');
+    await faceapi.nets.faceLandmark68Net.loadFromUri('/static/face_models');
+  }
+
+  function detectFace() {
+    const detect = async () => {
+      if (!video.paused && !video.ended) {
+        const result = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks();
+
+        overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
+        if (result) {
+          const resized = faceapi.resizeResults(result, {
+            width: overlay.width,
+            height: overlay.height
+          });
+          faceapi.draw.drawDetections(overlay, resized);
+          faceapi.draw.drawFaceLandmarks(overlay, resized);
+          updateStatus('Face detected', 'success');
+          captureBtn.disabled = false;
+        } else {
+          updateStatus('No face detected', 'warning');
+          captureBtn.disabled = true;
+        }
+      }
+      requestAnimationFrame(detect);
+    };
+    detect();
+  }
+
+  captureBtn.addEventListener('click', e => {
+    e.preventDefault();
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    photoInput.value = canvas.toDataURL('image/jpeg');
+    photoForm.submit();
+  });
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    updateStatus('Loading models...');
+    await loadModels();
+    updateStatus('Starting camera...');
+    await startVideo();
+    video.addEventListener('play', () => {
+      overlay.width = video.videoWidth;
+      overlay.height = video.videoHeight;
+      detectFace();
+    });
+  });
+</script>
+{% endblock %}

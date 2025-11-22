@@ -1,0 +1,14 @@
+{% extends "users/base.html" %}
+{% load static %}
+
+{% block content %}
+<h1>Working day </h1>
+<ul>
+{% for article in object_list %}
+    <li>{{ article.date }} - {{ article.headline }}</li>
+{% empty %}
+    <li>No articles yet.</li>
+{% endfor %}
+</ul>
+
+{% endblock%}

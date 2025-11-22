@@ -1,0 +1,147 @@
+{% extends "users/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-5">
+    <h1 class="text-2xl fw-bold">Employee Time & Pay Dashboard</h1>
+    <div class="d-flex gap-2">
+      <a href="{% url 'attendance:timecard' %}" class="btn btn-primary">
+        <i class="bi bi-clock me-1"></i> View Timecard
+      </a>
+      <a href="{% url 'payroll:details' %}" class="btn btn-outline-primary">
+        <i class="bi bi-wallet2 me-1"></i> Payroll Portal
+      </a>
+    </div>
+  </div>
+
+  <!-- Pay & Compensation Overview -->
+  <div class="row g-4">
+    <!-- Pay Details -->
+    <div class="col-md-6">
+      <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-body">
+          <h5 class="card-title fw-semibold mb-3">
+            <i class="bi bi-calendar-date me-2 text-primary"></i>Pay Details
+          </h5>
+          <p><strong>Next Pay Day:</strong> {{ next_pay_day }}</p>
+          <p><strong>Pay Frequency:</strong> {{ pay_frequency }}</p>
+          <p class="text-muted small mt-2">
+            Update your direct deposit or tax info in
+            <a href="#" class="text-blue-600 hover:underline">Payroll Portal</a>.
+          </p>
+          <a href="{% url 'attendance:timecard' %}" class="small text-primary mt-2 d-inline-block">
+            See Timecard →
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Compensation -->
+    <div class="col-md-6">
+      <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-body">
+          <h5 class="card-title fw-semibold mb-3">
+            <i class="bi bi-cash-coin me-2 text-success"></i>Compensation
+          </h5>
+          <div class="d-flex justify-content-between">
+            <div>
+              <p class="text-secondary mb-1">Base Hourly Rate</p>
+              <p class="h4 fw-bold">${{ base_rate }}</p>
+            </div>
+            <div>
+              <p class="text-secondary mb-1">Shift Differential</p>
+              <p class="h4 fw-bold">${{ shift_diff }}</p>
+            </div>
+          </div>
+          <a href="#" class="small text-primary mt-3 d-inline-block">See your step plan →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Anytime Pay -->
+  <div class="card mt-4 shadow-sm border-0 rounded-3">
+    <div class="card-body">
+      <h5 class="card-title fw-semibold mb-3">
+        <i class="bi bi-cash-stack me-2 text-info"></i>Anytime Pay
+      </h5>
+      <p class="display-6 fw-bold">${{ anytime_pay }}</p>
+      <p class="text-muted small">
+        Access your available earned wages before payday.
+      </p>
+      <a href="#" class="small text-primary">See Anytime Pay →</a>
+    </div>
+  </div>
+
+  <!-- Summary Section -->
+  <div class="row g-4 mt-4">
+    <div class="col-md-4">
+      <div class="card shadow-sm border-0 rounded-3 text-center p-3">
+        <p class="text-muted mb-1 small">Total Hours This Week</p>
+        <h3 class="text-primary fw-bold">{{ total_hours }}</h3>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card shadow-sm border-0 rounded-3 text-center p-3">
+        <p class="text-muted mb-1 small">Overtime Hours</p>
+        <h3 class="text-success fw-bold">{{ overtime_hours }}</h3>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card shadow-sm border-0 rounded-3 text-center p-3">
+        <p class="text-muted mb-1 small">Late Arrivals</p>
+        <h3 class="text-danger fw-bold">{{ late_days }}</h3>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Clock Activity -->
+  <div class="card mt-5 shadow-sm border-0 rounded-3">
+    <div class="card-body">
+      <h5 class="card-title fw-semibold mb-3">
+        <i class="bi bi-activity me-2 text-primary"></i>Recent Clock Activity
+      </h5>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Date</th>
+              <th>Clock In</th>
+              <th>Clock Out</th>
+              <th>Hours Worked</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for log in time_logs %}
+              <tr>
+                <td>{{ log.date }}</td>
+                <td>{{ log.clock_in }}</td>
+                <td>{{ log.clock_out }}</td>
+                <td>{{ log.total_hours }}</td>
+                <td>
+                  {% if log.status == 'Late' %}
+                    <span class="badge bg-danger">{{ log.status }}</span>
+                  {% else %}
+                    <span class="badge bg-success">{{ log.status }}</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="5" class="text-center text-muted py-3">
+                  No recent activity available.
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
